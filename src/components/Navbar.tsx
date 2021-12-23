@@ -1,8 +1,10 @@
-import React from 'react'
+import React, { FC } from 'react'
 
-import farmer from '../assets/farmer.png'
+export interface NavbarProps {
+  account: string
+}
 
-const Navbar = ({ account }) => {
+const Navbar: FC<NavbarProps> = ({ account }) => {
     return (
       <nav className="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
         <a
@@ -11,7 +13,6 @@ const Navbar = ({ account }) => {
           target="_blank"
           rel="noopener noreferrer"
         >
-          <img src={farmer} width="30" height="30" className="d-inline-block align-top" alt="" />
           &nbsp; DApp Token Farm
         </a>
 

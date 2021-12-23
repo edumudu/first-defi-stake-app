@@ -20,7 +20,6 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   const loadWeb3 = async () => {
-    console.log('Loading web3');
     if (window.ethereum) {
       const provider = new providers.Web3Provider(window.ethereum, 'any');
       const [address] = await provider.listAccounts();
@@ -33,7 +32,6 @@ const App = () => {
   }
 
   const loadBlockchainData = async () => {
-    console.log('hehe')
     if(!metamaskProvider || !userAddress) return;
 
     const rcpProvider = new providers.JsonRpcProvider('HTTP://192.168.160.1:7545');
