@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from 'react'
-import { providers, Contract, utils } from 'ethers'
+import React, { useEffect, useState } from 'react';
+import { providers, Contract, utils } from 'ethers';
 
-import TheHeader from './components/Navbar'
-import Main from './components/Main'
+import TheHeader from './components/Navbar';
+import Main from './components/Main';
 
-import DaiToken from './abis/DaiToken.json'
-import DappToken from './abis/DappToken.json'
-import TokenFarm from './abis/TokenFarm.json'
+import DaiToken from './abis/DaiToken.json';
+import DappToken from './abis/DappToken.json';
+import TokenFarm from './abis/TokenFarm.json';
 
 const App = () => {
   const [metamaskProvider, setMetamaskProvider] = useState(null);
@@ -27,12 +27,12 @@ const App = () => {
       setMetamaskProvider(new providers.Web3Provider(window.ethereum));
       setUserAddress(address);
     } else {
-      alert('Non-Ethereum browser detected. You should consider trying MetaMask!')
+      alert('Non-Ethereum browser detected. You should consider trying MetaMask!');
     }
-  }
+  };
 
   const loadBlockchainData = async () => {
-    if(!metamaskProvider || !userAddress) return;
+    if (!metamaskProvider || !userAddress) return;
 
     const rcpProvider = new providers.JsonRpcProvider('HTTP://192.168.160.1:7545');
     const { chainId: networkId } = await rcpProvider.getNetwork();
@@ -40,44 +40,44 @@ const App = () => {
     // Load DaiToken
     const daiTokenData = DaiToken.networks[networkId];
 
-    if(daiTokenData) {
+    if (daiTokenData) {
       const daiToken = new Contract(daiTokenData.address, DaiToken.abi, metamaskProvider.getSigner());
       const daiTokenBalance = await daiToken.balanceOf(userAddress);
 
-      setDaiToken(daiToken)
-      setDaiTokenBalance(daiTokenBalance)
+      setDaiToken(daiToken);
+      setDaiTokenBalance(daiTokenBalance);
     } else {
-      alert('DaiToken contract not deployed to detected network.')
+      alert('DaiToken contract not deployed to detected network.');
     }
 
     // Load DappToken
-    const dappTokenData = DappToken.networks[networkId]
+    const dappTokenData = DappToken.networks[networkId];
 
-    if(dappTokenData) {
+    if (dappTokenData) {
       const dappToken = new Contract(dappTokenData.address, DappToken.abi, metamaskProvider);
       const dappTokenBalance = await dappToken.balanceOf(userAddress);
 
       setDappToken(dappToken);
       setDappTokenBalance(dappTokenBalance);
     } else {
-      alert('DappToken contract not deployed to detected network.')
+      alert('DappToken contract not deployed to detected network.');
     }
 
     // Load TokenFarm
-    const tokenFarmData = TokenFarm.networks[networkId]
+    const tokenFarmData = TokenFarm.networks[networkId];
 
-    if(tokenFarmData) {
+    if (tokenFarmData) {
       const tokenFarm = new Contract(tokenFarmData.address, TokenFarm.abi, metamaskProvider.getSigner());
-      const stakingBalance = await tokenFarm.stakingBalance(userAddress)
+      const stakingBalance = await tokenFarm.stakingBalance(userAddress);
 
-      setTokenFarm(tokenFarm)
+      setTokenFarm(tokenFarm);
       setStakingBalance(stakingBalance);
     } else {
-      alert('TokenFarm contract not deployed to detected network.')
+      alert('TokenFarm contract not deployed to detected network.');
     }
 
     setIsLoading(false);
-  }
+  };
 
   const stakeTokens = async (amount) => {
     setIsLoading(true);
@@ -90,24 +90,22 @@ const App = () => {
       const stakeTx = await tokenFarm.stakeTokens(amount);
 
       await stakeTx.wait();
-
-      console.log('Staked successfully.');
     } catch (error) {
-      if(error.code === 4001) return console.log('User denied transaction signature');
+      if (error.code === 4001) return console.log('User denied transaction signature');
 
       throw error;
     } finally {
       setIsLoading(false);
     }
-  }
+  };
 
   const unstakeTokens = async (amount) => {
     setIsLoading(true);
 
-    await tokenFarm.unstakeTokens()
+    await tokenFarm.unstakeTokens();
 
     setIsLoading(false);
-  }
+  };
 
   useEffect(() => loadWeb3(), []);
   useEffect(() => loadBlockchainData(), [userAddress, metamaskProvider]);
@@ -137,6 +135,6 @@ const App = () => {
       </div>
     </div>
   );
-}
+};
 
 export default App;
