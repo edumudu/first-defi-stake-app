@@ -23,6 +23,9 @@ module.exports = {
     '@typescript-eslint',
   ],
   rules: {
+    'react/react-in-jsx-scope': 'off',
+    'consistent-return': 'off',
+    'import/prefer-default-export': 'off',
     'react/function-component-definition': ['error', {
       namedComponents: 'arrow-function',
       unnamedComponents: 'arrow-function',
