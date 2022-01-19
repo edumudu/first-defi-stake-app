@@ -1,11 +1,24 @@
-import { FC, FormEventHandler, useState } from 'react';
-import { utils, BigNumber } from 'ethers';
+import {
+  FC,
+  FormEventHandler,
+  useState,
+  useContext,
+  useCallback,
+  useEffect,
+} from 'react';
+import { utils, BigNumber, Contract } from 'ethers';
 import {
   Button,
   Input,
   Card,
   CardContent,
 } from '@mui/material';
+
+import { ProvidersContext } from '../../contexts/providers';
+
+import { getDaiContract } from '../../services/dai';
+import { getDappContract } from '../../services/dapp';
+import { getTokenFarmContract, tokenFarmStakeDai, tokenFarmUnstakeDai } from '../../services/tokenFarm';
 
 import {
   Wrapper,
@@ -18,24 +31,85 @@ import {
 
 import dai from '../../assets/dai.png';
 
-export type MainPageProps = {
-  stakingBalance: string,
-  dappTokenBalance: string,
-  daiTokenBalance: string,
-  isStakeLoading: boolean,
-  unstakeTokens: () => void,
-  stakeTokens: (amount: BigNumber) => void,
-};
+export type MainPageProps = {};
 
-const Main: FC<MainPageProps> = ({
-  stakingBalance,
-  dappTokenBalance,
-  daiTokenBalance,
-  isStakeLoading,
-  unstakeTokens,
-  stakeTokens,
-}) => {
+const Main: FC<MainPageProps> = () => {
+  const {
+    rpcProvider,
+    metamaskProvider,
+    wallet,
+    userAddress,
+  } = useContext(ProvidersContext);
+
+  const [daiToken, setDaiToken] = useState<Contract>();
+  const [tokenFarm, setTokenFarm] = useState<Contract>();
+  const [daiTokenBalance, setDaiTokenBalance] = useState('0');
+  const [dappTokenBalance, setDappTokenBalance] = useState('0');
+  const [stakingBalance, setStakingBalance] = useState('0');
+  const [isStakeLoading, setIsStakeLoading] = useState(false);
+
   const [amount, setAmount] = useState('');
+
+  const loadBlockchainData = useCallback(async () => {
+    if (!metamaskProvider || !wallet || !rpcProvider || !userAddress) return;
+
+    const [daiTokenContract, dappTokenData, tokenFarmContract] = await Promise.all([
+      getDaiContract(rpcProvider, wallet), // Load DaiToken
+      getDappContract(rpcProvider, wallet), // Load DappToken
+      getTokenFarmContract(rpcProvider, wallet), // Load TokenFarm
+    ]);
+
+    setDaiToken(daiTokenContract);
+    setTokenFarm(tokenFarmContract);
+
+    const [daiBalance, dappBalance, stakedBalance] = await Promise.all([
+      daiTokenContract.balanceOf(userAddress),
+      dappTokenData.balanceOf(userAddress),
+      tokenFarmContract.stakingBalance(userAddress),
+    ]);
+
+    setDaiTokenBalance(daiBalance);
+    setDappTokenBalance(dappBalance);
+    setStakingBalance(stakedBalance);
+  }, [wallet, metamaskProvider, rpcProvider, userAddress]);
+
+  const updateDaiAndStakedBalance = async () => {
+    if (!daiToken || !tokenFarm) return;
+
+    const [daiBalance, stakedBalance] = await Promise.all([
+      daiToken.balanceOf(userAddress),
+      tokenFarm.stakingBalance(userAddress),
+    ]);
+
+    setDaiTokenBalance(daiBalance);
+    setStakingBalance(stakedBalance);
+  };
+
+  const stakeTokens = async (tokensAmount: BigNumber) => {
+    if (!daiToken || !tokenFarm) return;
+
+    setIsStakeLoading(true);
+
+    try {
+      await tokenFarmStakeDai(daiToken, tokenFarm, tokensAmount);
+      await updateDaiAndStakedBalance();
+    } finally {
+      setIsStakeLoading(false);
+    }
+  };
+
+  const unstakeTokens = async () => {
+    if (!tokenFarm) return;
+
+    setIsStakeLoading(true);
+
+    try {
+      await tokenFarmUnstakeDai(tokenFarm);
+      await updateDaiAndStakedBalance();
+    } finally {
+      setIsStakeLoading(false);
+    }
+  };
 
   const onSubmit: FormEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault();
@@ -43,9 +117,7 @@ const Main: FC<MainPageProps> = ({
     stakeTokens(utils.parseEther(amount));
   };
 
-  const onUnstakeClick = () => {
-    unstakeTokens();
-  };
+  useEffect(() => { loadBlockchainData(); }, [loadBlockchainData]);
 
   return (
     <Wrapper>
@@ -76,7 +148,7 @@ const Main: FC<MainPageProps> = ({
           <StakeForm onSubmit={onSubmit}>
             <FormHeader>
               <b>Stake Tokens</b>
-              <span className="float-right text-muted">
+              <span>
                 Balance:
                 {' '}
                 {utils.formatEther(daiTokenBalance)}
@@ -112,7 +184,7 @@ const Main: FC<MainPageProps> = ({
               fullWidth
               size="large"
               disabled={isStakeLoading}
-              onClick={onUnstakeClick}
+              onClick={unstakeTokens}
             >
               UN-STAKE...
             </Button>

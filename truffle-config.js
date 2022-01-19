@@ -1,7 +1,7 @@
 module.exports = {
   networks: {
     development: {
-      host: '172.20.0.1',
+      host: '10.0.0.186',
       port: 7545,
       network_id: '*', // Match any network id
     },
